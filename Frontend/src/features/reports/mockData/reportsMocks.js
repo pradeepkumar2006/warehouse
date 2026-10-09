@@ -1,0 +1,55 @@
+/**
+ * A8 Reports Mock Data
+ */
+export const DEFAULT_REPORTS = [
+  {
+    id: 'REP-001',
+    name: 'Q3 Congestion Weekly Audit',
+    type: 'Weekly Congestion',
+    date: '2026-10-06',
+    format: 'PDF',
+    createdBy: 'Sarah Lin (Admin)',
+    status: 'Ready',
+    size: '2.4 MB',
+  },
+  {
+    id: 'REP-002',
+    name: 'DSTGT Model Accuracy Benchmark',
+    type: 'Model Performance',
+    date: '2026-10-05',
+    format: 'CSV',
+    createdBy: 'Sarah Lin (Admin)',
+    status: 'Ready',
+    size: '840 KB',
+  },
+  {
+    id: 'REP-003',
+    name: 'Shift Bottleneck & Alert Log',
+    type: 'Alert History',
+    date: '2026-10-04',
+    format: 'PDF',
+    createdBy: 'Sam Haddad (Lead)',
+    status: 'Ready',
+    size: '3.1 MB',
+  },
+  {
+    id: 'REP-004',
+    name: 'Operations Daily Executive Digest',
+    type: 'Daily Summary',
+    date: '2026-10-03',
+    format: 'PDF',
+    createdBy: 'Auto-Scheduler',
+    status: 'Ready',
+    size: '1.8 MB',
+  },
+  {
+    id: 'REP-005',
+    name: 'Floor Operator Audit Velocity',
+    type: 'User Activity',
+    date: '2026-10-02',
+    format: 'CSV',
+    createdBy: 'Sarah Lin (Admin)',
+    status: 'Ready',
+    size: '420 KB',
+  },
+];
