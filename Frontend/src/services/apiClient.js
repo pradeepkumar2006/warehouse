@@ -29,7 +29,7 @@ class ApiClient {
 
   // Central request dispatcher
   async request({ endpoint, method = 'GET', data = null, mockResponse = null, latency = 250 }) {
-    if (this.useMock || mockResponse !== null) {
+    if (this.useMock) {
       await this.simulateLatency(latency);
       if (typeof mockResponse === 'function') {
         return mockResponse(data);

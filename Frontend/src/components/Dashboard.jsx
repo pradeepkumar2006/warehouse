@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   RotateCcw, 
@@ -36,7 +36,7 @@ import {
   UserReportsView
 } from './user';
 
-import { auditService } from '../services';
+import { auditService, telemetryService, alertsService } from '../services';
 
 export default function Dashboard({ currentUser, onLogout, onSwitchRole }) {
   const isAdmin = currentUser?.role === 'admin';
@@ -75,8 +75,9 @@ export default function Dashboard({ currentUser, onLogout, onSwitchRole }) {
   };
 
   // =========================================================================
-  // GLOBAL AUDIT LOG
+  // GLOBAL AUDIT LOG & LIVE TELEMETRY STATE
   // =========================================================================
+  const [activeAlertsCount, setActiveAlertsCount] = useState(3);
   const [auditLogs, setAuditLogs] = useState([
     { id: 'LOG-101', user: 'admin', action: 'Changed High threshold 70 to 75', module: 'Warehouse Config', time: '10:42', ip: '192.168.1.5' },
     { id: 'LOG-102', user: 'admin', action: 'Acknowledged Alert #ALT-904 in Aisle B', module: 'Bottleneck Alerts', time: '10:15', ip: '192.168.1.5' },
@@ -85,6 +86,33 @@ export default function Dashboard({ currentUser, onLogout, onSwitchRole }) {
     { id: 'LOG-105', user: 'sam.haddad', action: 'Simulated reroute fix for 12 AGVs', module: 'What-If Sim', time: '08:30', ip: '192.168.1.18' },
     { id: 'LOG-106', user: 'admin', action: 'Created new user account: lucas.mayer', module: 'User Management', time: 'Yesterday', ip: '192.168.1.5' },
   ]);
+
+  // Sync real-time live telemetry stats & audit logs from backend
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveState = async () => {
+      try {
+        const stats = await telemetryService.getLiveStats();
+        if (isMounted && stats && typeof stats.activeAlertsCount === 'number') {
+          setActiveAlertsCount(stats.activeAlertsCount);
+        }
+      } catch {}
+
+      try {
+        const logs = await auditService.getAuditLogs();
+        if (isMounted && Array.isArray(logs) && logs.length > 0) {
+          setAuditLogs(logs);
+        }
+      } catch {}
+    };
+
+    fetchLiveState();
+    const interval = setInterval(fetchLiveState, 10000); // 10s live poll
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogAction = (action, module) => {
     const newLog = {
@@ -152,7 +180,7 @@ export default function Dashboard({ currentUser, onLogout, onSwitchRole }) {
       onSwitchRole={onSwitchRole}
       toasts={toasts}
       onRemoveToast={removeToast}
-      alertsCount={5}
+      alertsCount={activeAlertsCount}
       onShowToast={showToast}
     >
       {/* TAB 1: OVERVIEW / USER DASHBOARD (U1) */}

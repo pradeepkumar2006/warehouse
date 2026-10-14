@@ -151,7 +151,7 @@ export const DEFAULT_THRESHOLDS = {
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
   WS_URL: import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/telemetry',
-  USE_MOCK: import.meta.env.VITE_USE_MOCK !== 'false', // Defaults to true for standalone demo
+  USE_MOCK: import.meta.env.VITE_USE_MOCK === 'true', // Defaults to false for real live backend data
   TIMEOUT_MS: 10000,
   DSTGT_MODEL_VERSION: 'DSTGT v1.0',
 };

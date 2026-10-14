@@ -3,6 +3,17 @@ node_modules/
 Frontend/node_modules/
 Backend/node_modules/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
 # Production builds
 dist/
 dist-ssr/

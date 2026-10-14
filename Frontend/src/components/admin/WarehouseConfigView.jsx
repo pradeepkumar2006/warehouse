@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Layers, 
   MapPin, 
@@ -23,6 +23,7 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
+import { configService } from '../../services';
 
 export default function WarehouseConfigView({ 
   onShowToast, 
@@ -159,13 +160,49 @@ export default function WarehouseConfigView({
     if (onShowToast) onShowToast(`Device ${deviceId} switched to ${newStat}`, 'info');
   };
 
+  // Fetch configuration from backend on mount
+  useEffect(() => {
+    let isMounted = true;
+    configService.getConfig()
+      .then((cfg) => {
+        if (isMounted && cfg) {
+          if (cfg.thresholds) setThresholds(cfg.thresholds);
+          if (Array.isArray(cfg.aisles) && cfg.aisles.length > 0) {
+            setAisles(cfg.aisles.map(a => ({
+              ...a,
+              color: a.id === 'AISLE-B' ? '#ef4444' : (a.id === 'AISLE-A' ? '#10b981' : '#3b82f6')
+            })));
+          }
+        }
+      })
+      .catch((err) => console.warn('Backend config load error:', err));
+    return () => { isMounted = false; };
+  }, []);
+
   // Save Changes
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!isThresholdValid) {
       if (onShowToast) {
         onShowToast('Cannot save: Moderate must be less than High, High less than Critical', 'error');
       }
       return;
+    }
+
+    try {
+      await configService.saveConfig({
+        thresholds,
+        aisles: aisles.map((a) => ({
+          id: a.id,
+          name: a.name,
+          zone: a.zone,
+          capacity: a.capacity,
+          status: a.status,
+          x: a.x,
+          y: a.y
+        }))
+      });
+    } catch (err) {
+      console.warn('Backend config save error:', err);
     }
 
     setHasUnsavedChanges(false);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -20,6 +20,7 @@ import {
   Lock,
   Sparkles
 } from 'lucide-react';
+import { userService } from '../../services';
 
 export default function UserManagementView({ 
   currentUser, 
@@ -126,6 +127,19 @@ export default function UserManagementView({
   const [formForceChange, setFormForceChange] = useState(true);
   const [usernameError, setUsernameError] = useState('');
 
+  // Fetch real users from backend on mount
+  useEffect(() => {
+    let isMounted = true;
+    userService.getUsers()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setUsers(data);
+        }
+      })
+      .catch((err) => console.warn('Could not fetch real users:', err));
+    return () => { isMounted = false; };
+  }, []);
+
   // Confirmation Popups State
   const [confirmDisableTarget, setConfirmDisableTarget] = useState(null);
   const [confirmDeleteTarget, setConfirmDeleteTarget] = useState(null);
@@ -176,7 +190,7 @@ export default function UserManagementView({
   };
 
   // Handle Form Submit (Add or Edit)
-  const handleSubmitForm = (e) => {
+  const handleSubmitForm = async (e) => {
     e.preventDefault();
     const cleanUsername = formUsername.trim().toLowerCase();
 
@@ -200,6 +214,17 @@ export default function UserManagementView({
       if (isCurrent && formRole !== 'Admin') {
         if (onShowToast) onShowToast('Action blocked: Admin cannot revoke own admin privileges', 'error');
         return;
+      }
+
+      try {
+        await userService.updateUser(editingUser.id, {
+          name: formName.trim(),
+          role: formRole.toLowerCase(),
+          status: formStatus,
+          password: formPassword || undefined
+        });
+      } catch (err) {
+        console.warn('Backend user update error:', err);
       }
 
       setUsers((prev) =>
@@ -231,6 +256,19 @@ export default function UserManagementView({
         email: `${cleanUsername}@twinflow.ai`,
         forcePasswordChange: formForceChange
       };
+
+      try {
+        await userService.createUser({
+          name: formName.trim(),
+          username: cleanUsername,
+          email: `${cleanUsername}@twinflow.ai`,
+          password: formPassword || 'warehouse123',
+          role: formRole.toLowerCase(),
+          status: formStatus
+        });
+      } catch (err) {
+        console.warn('Backend user create error:', err);
+      }
 
       setUsers((prev) => [newUser, ...prev]);
       if (onShowToast) onShowToast(`Created user account for ${formName}`, 'success');
@@ -267,9 +305,14 @@ export default function UserManagementView({
     }
   };
 
-  const confirmDisableUser = () => {
+  const confirmDisableUser = async () => {
     if (!confirmDisableTarget) return;
     const target = confirmDisableTarget;
+    try {
+      await userService.updateUser(target.id, { status: 'Disabled' });
+    } catch (e) {
+      console.warn('Backend disable error:', e);
+    }
     setUsers((prev) =>
       prev.map((u) => (u.id === target.id ? { ...u, status: 'Disabled' } : u))
     );
@@ -292,9 +335,14 @@ export default function UserManagementView({
     setConfirmDeleteTarget(user);
   };
 
-  const confirmDeleteUser = () => {
+  const confirmDeleteUser = async () => {
     if (!confirmDeleteTarget) return;
     const target = confirmDeleteTarget;
+    try {
+      await userService.deleteUser(target.id);
+    } catch (e) {
+      console.warn('Backend delete error:', e);
+    }
     setUsers((prev) => prev.filter((u) => u.id !== target.id));
     setConfirmDeleteTarget(null);
     if (onShowToast) onShowToast(`Deleted user ${target.name}`, 'success');

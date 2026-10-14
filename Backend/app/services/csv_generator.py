@@ -1,0 +1,56 @@
+import csv
+import os
+from pathlib import Path
+from datetime import datetime
+
+def generate_warehouse_csv_report(
+    file_path: Path,
+    report_title: str,
+    report_type: str,
+    created_by: str,
+    date_str: str
+) -> str:
+    """
+    Generates structured RFC-4180 compliant CSV export for warehouse data analysis.
+    """
+    os.makedirs(file_path.parent, exist_ok=True)
+    
+    with open(file_path, mode='w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        
+        # Metadata comments
+        writer.writerow(["# TwinFlow AI Digital Twin - Warehouse Export"])
+        writer.writerow(["# Report Title", report_title])
+        writer.writerow(["# Report Type", report_type])
+        writer.writerow(["# Created By", created_by])
+        writer.writerow(["# Timestamp", date_str])
+        writer.writerow([])
+        
+        # Header Row
+        writer.writerow([
+            "Timestamp",
+            "Aisle_ID",
+            "Zone_Name",
+            "Occupancy_Pct",
+            "Active_AGVs",
+            "Queue_Length",
+            "Congestion_Prob_Pct",
+            "Predicted_Delay_Min",
+            "Attention_Weight",
+            "Status_Flag"
+        ])
+        
+        # Sample realistic time-series records for the week
+        sample_records = [
+            ["2026-10-06 08:00:00", "AISLE-A", "Zone 1 (Inbound)", "62.2", "4", "2", "28.5", "1.1", "0.08", "NORMAL"],
+            ["2026-10-06 08:30:00", "AISLE-B", "Zone 2 (Storage)", "78.4", "12", "11", "72.0", "4.3", "0.26", "WARNING"],
+            ["2026-10-06 09:00:00", "AISLE-B", "Zone 2 (Storage)", "88.3", "18", "22", "87.0", "6.4", "0.32", "CRITICAL"],
+            ["2026-10-06 09:30:00", "AISLE-C", "Zone 2 (Storage)", "58.1", "5", "3", "34.0", "1.4", "0.12", "NORMAL"],
+            ["2026-10-06 10:00:00", "AISLE-D", "Zone 3 (Sortation)", "82.5", "14", "14", "76.4", "4.1", "0.22", "WARNING"],
+            ["2026-10-06 10:30:00", "AISLE-B", "Zone 2 (Storage)", "85.0", "17", "19", "83.1", "5.8", "0.29", "CRITICAL"],
+        ]
+        
+        for row in sample_records:
+            writer.writerow(row)
+            
+    return str(file_path)

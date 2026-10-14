@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bot, 
   Battery, 
@@ -11,18 +11,47 @@ import {
   PauseCircle, 
   PlayCircle 
 } from 'lucide-react';
+import { API_CONFIG } from '../../config/appConfig';
 
 export default function FleetView() {
   const [fleetStatus, setFleetStatus] = useState([
-    { id: 'AGV-01', model: 'AutoCarry 1200', battery: 94, status: 'Active Haul', currentZone: 'Aisle Racks A1', speed: '1.6 m/s', payload: '420 kg', task: 'Pallet Delivery to Dock 1' },
-    { id: 'AGV-02', model: 'AutoCarry 1200', battery: 78, status: 'Active Haul', currentZone: 'Aisle Racks B1', speed: '1.4 m/s', payload: '380 kg', task: 'Pick Batch Dispatch' },
-    { id: 'AGV-03', model: 'AutoCarry 1500', battery: 62, status: 'Dynamic Reroute', currentZone: 'Bypass Corridor C', speed: '1.8 m/s', payload: '510 kg', task: 'Avoid Chokepoint J-04' },
-    { id: 'AGV-04', model: 'AutoCarry 1200', battery: 11, status: 'Critical Battery', currentZone: 'Sortation Junction', speed: '0.8 m/s', payload: '150 kg', task: 'Auto-Docking to Charger #2' },
-    { id: 'AGV-05', model: 'AutoCarry 1500', battery: 100, status: 'Charging', currentZone: 'Charging Bay #1', speed: '0.0 m/s', payload: '0 kg', task: 'Standby Fleet' },
-    { id: 'AGV-06', model: 'AutoCarry 1200', battery: 85, status: 'Active Haul', currentZone: 'Inbound Dock 2', speed: '1.5 m/s', payload: '460 kg', task: 'Pallet Ingestion' },
+    { id: 'AGV-01', model: 'AutoCarry 1200', battery: 94, status: 'Active Haul', currentZone: 'Zone 1 (Inbound)', speed: '1.2 m/s', payload: '380 kg', task: 'Pallet Delivery to Dock 1' },
+    { id: 'AGV-02', model: 'AutoCarry 1500', battery: 88, status: 'Queued / Bottleneck', currentZone: 'Zone 2 (Storage)', speed: '0.0 m/s', payload: '520 kg', task: 'Waiting in Aisle B Queue' },
+    { id: 'AGV-03', model: 'AutoCarry 1200', battery: 76, status: 'Active Haul', currentZone: 'Zone 3 (Sortation)', speed: '1.2 m/s', payload: '290 kg', task: 'Sortation Loop Transit' }
   ]);
-
   const [emergencyStop, setEmergencyStop] = useState(false);
+
+  // Connect to real-time WebSocket telemetry for all 22 AGVs
+  useEffect(() => {
+    let ws;
+    try {
+      ws = new WebSocket(API_CONFIG.WS_URL);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.agvs && Array.isArray(data.agvs) && data.agvs.length > 0) {
+            setFleetStatus(data.agvs.map((bot) => ({
+              id: bot.id,
+              model: bot.payloadKg > 350 ? 'AutoCarry 1500' : 'AutoCarry 1200',
+              battery: bot.battery,
+              status: bot.status === 'Navigating' ? 'Active Haul' : (bot.status === 'Queued' ? 'Queued / Bottleneck' : bot.status),
+              currentZone: bot.zone,
+              speed: `${bot.velocity} m/s`,
+              payload: `${bot.payloadKg} kg`,
+              task: bot.status === 'Queued' ? 'Waiting in Aisle B Queue' : `Delivery to ${bot.zone}`
+            })));
+          }
+        } catch (e) {
+          console.warn('WS parse error in FleetView:', e);
+        }
+      };
+    } catch (e) {
+      console.warn('WS connection error in FleetView:', e);
+    }
+    return () => {
+      if (ws) ws.close();
+    };
+  }, []);
 
   return (
     <div className="space-y-6 animate-fadeIn">
